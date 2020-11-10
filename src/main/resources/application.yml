@@ -4,3 +4,40 @@ server:
 spring:
   application:
     name: boot-demo
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      url: jdbc:mysql://192.168.248.1:3306/boot?useUnicode=true&characterEncoding=UTF-8&useSSL=false&  serverTimezone=GMT%2B8
+      driver-class-name: com.mysql.jdbc.Driver
+      username: root
+      password: "123456"
+      initialSize: 5
+      minIdle: 5
+      maxActive: 20
+
+
+
+##定时调度的配置
+xxl:
+  adminAddresses: http://192.168.248.100:8004/myxxlJob
+  appName: docker-demo
+  ip: 192.168.248.1
+  port: 9998
+  accessToken:
+  logPath: /data/applogs/xxl-job/jobhandler
+  logRetentionDays: -1
+
+
+mybatis-plus:
+  mapper-locations: classpath*:com/rrk/mapper/*.xml
+  type-aliases-package: com.rrk.entity
+  global-config:
+    id-type: 2
+    field-strategy: 1
+    db-column-underline: true
+    refresh-mapper: true
+    logic-delete-value: 1
+    logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
