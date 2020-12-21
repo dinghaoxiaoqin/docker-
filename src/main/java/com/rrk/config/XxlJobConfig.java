@@ -17,7 +17,7 @@ public class XxlJobConfig {
     XxlJobProperties xxlJobProperties;
 
     @Bean(initMethod = "start", destroyMethod = "destroy")
-    public XxlJobSpringExecutor xxlJobExecutor() {
+    public XxlJobSpringExecutor  xxlJobExecutor() {
         logger.info(">>>>>>>>>>> xxl-job config init.");
         XxlJobSpringExecutor  xxlJobExecutor = new XxlJobSpringExecutor ();
         xxlJobExecutor.setAdminAddresses(xxlJobProperties.getAdminAddresses());

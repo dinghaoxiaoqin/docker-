@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rrk.dao.OmsOrderMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.rrk.entity.OmsOrder">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="create_time" property="createTime"/>
+        <result column="user_name" property="userName"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="pay_amount" property="payAmount"/>
+        <result column="freight_amount" property="freightAmount"/>
+        <result column="pay_type" property="payType"/>
+        <result column="source_type" property="sourceType"/>
+        <result column="order_status" property="orderStatus"/>
+        <result column="order_type" property="orderType"/>
+        <result column="auto_confirm_day" property="autoConfirmDay"/>
+        <result column="receiver_name" property="receiverName"/>
+        <result column="receiver_phone" property="receiverPhone"/>
+        <result column="receiver_province" property="receiverProvince"/>
+        <result column="receiver_city" property="receiverCity"/>
+        <result column="note" property="note"/>
+        <result column="confirm_status" property="confirmStatus"/>
+        <result column="delete_status" property="deleteStatus"/>
+        <result column="payment_time" property="paymentTime"/>
+        <result column="delivery_time" property="deliveryTime"/>
+        <result column="receive_time" property="receiveTime"/>
+        <result column="modify_time" property="modifyTime"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, order_no, create_time, user_name, total_amount, pay_amount, freight_amount, pay_type, source_type, order_status, order_type, auto_confirm_day, receiver_name, receiver_phone, receiver_province,receiver_city, note, confirm_status, delete_status, payment_time, delivery_time, receive_time, modify_time
+    </sql>
+
+    <select id="getStaticticOrders" resultType="com.rrk.dto.OrderStaticticDto">
+    SELECT b.product_brand AS brand, COUNT(b.order_no) AS orderCount,SUM(IFNULL(b.product_num,0)) AS nums, SUM(IFNULL(a.total_amount,0)) AS amount  FROM  oms_order a
+    LEFT JOIN  order_detail b ON a.order_no = b.order_no
+    WHERE a.order_status = 3 AND b.product_brand IS NOT NULL  GROUP BY  b.product_brand ORDER BY orderCount DESC
+    </select>
+    <select id="getStatisticsByDay" resultType="com.rrk.dto.OrderDayDto">
+              SELECT oms.createTime,COUNT(oms.orderNo) AS orderCount ,SUM(IFNULL(oms.productNum,0)) AS nums,SUM(IFNULL(oms.totalAmount,0)) AS amount FROM (
+    SELECT DATE_FORMAT(a.create_time,'%Y-%m-%d') createTime ,a.order_no AS orderNo,b.product_num AS productNum, a.total_amount AS totalAmount FROM  oms_order a
+    LEFT JOIN  order_detail b ON a.order_no = b.order_no WHERE 1=1 AND a.order_status = 3 AND a.create_time BETWEEN #{start} AND #{end}
+    ) oms GROUP BY oms.createTime
+    </select>
+
+</mapper>

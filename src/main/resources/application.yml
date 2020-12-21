@@ -3,25 +3,31 @@ server:
 
 spring:
   application:
-    name: boot-demo
+    name: docker-demo
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
-      url: jdbc:mysql://192.168.248.1:3306/boot?useUnicode=true&characterEncoding=UTF-8&useSSL=false&  serverTimezone=GMT%2B8
+      url: jdbc:mysql://localhost:3306/mytest?useUnicode=true&characterEncoding=UTF-8&useSSL=false&  serverTimezone=GMT%2B8
       driver-class-name: com.mysql.jdbc.Driver
       username: root
       password: "123456"
       initialSize: 5
       minIdle: 5
       maxActive: 20
+#elasticsearch的配置
+elasticSearch:
+  hostlist: 127.0.0.1:9200
+  client:
+    connectNum: 10
+    connectPerRoute: 50
 
 
 
 ##定时调度的配置
 xxl:
-  adminAddresses: http://192.168.248.100:8004/myxxlJob
+  adminAddresses: http://localhost:6080/xxljob
   appName: docker-demo
-  ip: 192.168.248.1
+  ip:
   port: 9998
   accessToken:
   logPath: /data/applogs/xxl-job/jobhandler

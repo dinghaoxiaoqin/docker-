@@ -1,0 +1,19 @@
+#server:
+#  port: 9090
+#spring:
+#  application:
+#    name: docker-demo
+#  #配置中心
+#  cloud:
+#    nacos:
+#      discovery:
+#        server-addr: boot-nacos-server:8848
+#       # server-addr: 47.94.81.128:8848
+#      config:
+#        server-addr: boot-nacos-server:8848
+#       # server-addr: 47.94.81.128:8848
+#        group: DEFAULT_GROUP
+#        prefix: ${spring.application.name}
+#        file-extension: yml
+#        namespace: 0189e09a-7615-47de-9454-4dfd85d8b220
+
