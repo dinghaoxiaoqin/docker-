@@ -27,7 +27,7 @@ public class MyBatisPlusConfig {
     @Bean
     public PerformanceInterceptor performanceInterceptor() {
         PerformanceInterceptor performanceInterceptor = new PerformanceInterceptor();
-        performanceInterceptor.setMaxTime(1000);
+        performanceInterceptor.setMaxTime(10000);
         performanceInterceptor.setFormat(true);
         return performanceInterceptor;
     }

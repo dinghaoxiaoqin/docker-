@@ -35,15 +35,76 @@
     </sql>
 
     <select id="getStaticticOrders" resultType="com.rrk.dto.OrderStaticticDto">
-    SELECT b.product_brand AS brand, COUNT(b.order_no) AS orderCount,SUM(IFNULL(b.product_num,0)) AS nums, SUM(IFNULL(a.total_amount,0)) AS amount  FROM  oms_order a
+    SELECT b.product_brand AS brand , COUNT(b.order_no) AS orderCount,SUM(IFNULL(b.product_num,0)) AS nums, SUM(IFNULL(a.total_amount,0)) AS amount  FROM  oms_order a
     LEFT JOIN  order_detail b ON a.order_no = b.order_no
-    WHERE a.order_status = 3 AND b.product_brand IS NOT NULL  GROUP BY  b.product_brand ORDER BY orderCount DESC
+    WHERE a.order_status in (1,2,3) AND b.product_brand IS NOT NULL  GROUP BY  b.product_brand ORDER BY orderCount DESC
     </select>
     <select id="getStatisticsByDay" resultType="com.rrk.dto.OrderDayDto">
-              SELECT oms.createTime,COUNT(oms.orderNo) AS orderCount ,SUM(IFNULL(oms.productNum,0)) AS nums,SUM(IFNULL(oms.totalAmount,0)) AS amount FROM (
+    SELECT oms.createTime,COUNT(oms.orderNo) AS orderCount ,SUM(IFNULL(oms.productNum,0)) AS nums,SUM(IFNULL(oms.totalAmount,0)) AS amount FROM (
     SELECT DATE_FORMAT(a.create_time,'%Y-%m-%d') createTime ,a.order_no AS orderNo,b.product_num AS productNum, a.total_amount AS totalAmount FROM  oms_order a
     LEFT JOIN  order_detail b ON a.order_no = b.order_no WHERE 1=1 AND a.order_status = 3 AND a.create_time BETWEEN #{start} AND #{end}
     ) oms GROUP BY oms.createTime
+    </select>
+
+    <select id="getTotalPay" resultType="java.util.HashMap">
+        SELECT   oms.createTime ,COUNT( DISTINCT oms.userName) AS userCount FROM (
+        SELECT  DATE_FORMAT(a.create_time,'%Y-%m-%d') createTime,
+        a.user_name AS userName
+         FROM oms_order a WHERE a.order_status in(1,2,3)  AND a.create_time BETWEEN #{start} AND #{end}
+
+        ) oms GROUP BY oms.createTime
+    </select>
+    <select id="getTotalNewPay" resultType="java.util.HashMap">
+        SELECT
+        oms.createTime,
+        COUNT(DISTINCT oms.username) AS userCount
+        FROM
+
+        ( SELECT
+        DATE_FORMAT(a.create_time,
+        '%Y-%m-%d') createTime,
+        a.user_name AS userName ,
+        COUNT(a.user_name) AS uCount
+        FROM
+        oms_order a
+        WHERE
+        a.order_status IN(
+        1,2,3
+        )
+        AND
+        a.create_time  &lt;= #{end}
+        GROUP BY
+        a.user_name
+        HAVING
+        uCount =1 ) oms WHERE oms.createTime BETWEEN #{start} AND #{end}
+        GROUP BY
+        oms.createTime
+    </select>
+    <select id="getTotalOldPay" resultType="java.util.HashMap">
+        SELECT
+        oms.createTime,
+        COUNT(DISTINCT oms.username) AS userCount
+        FROM
+
+        ( SELECT
+        DATE_FORMAT(a.create_time,
+        '%Y-%m-%d') createTime,
+        a.user_name AS userName ,
+        COUNT(a.user_name) AS uCount
+        FROM
+        oms_order a
+        WHERE
+        a.order_status IN(
+        1,2,3
+        )
+        AND
+        a.create_time  &lt;= #{end}
+        GROUP BY
+        a.user_name
+        HAVING
+        uCount >1 ) oms WHERE oms.createTime BETWEEN #{start} AND #{end}
+        GROUP BY
+        oms.createTime
     </select>
 
 </mapper>

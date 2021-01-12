@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -23,4 +24,10 @@ public interface OmsOrderMapper extends BaseMapper<OmsOrder> {
     List<OrderStaticticDto> getStaticticOrders();
 
     List<OrderDayDto> getStatisticsByDay(@Param("start") Date start, @Param("end") Date end);
+
+    List<Map<String,Object>> getTotalPay(@Param("start") Date start, @Param("end") Date end);
+
+    List<Map<String,Object>> getTotalNewPay(@Param("start") Date start, @Param("end") Date end);
+
+    List<Map<String,Object>> getTotalOldPay(@Param("start") Date start, @Param("end") Date end);
 }

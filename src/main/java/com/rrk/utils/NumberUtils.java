@@ -22,6 +22,11 @@ public class NumberUtils {
         return resultStr;
     }
 
+    public static void main(String[] args) {
+        String s = GetRandomString(18);
+        System.out.println(s);
+    }
+
     //自动生成名字（中文）
     public static String generateName() {
 

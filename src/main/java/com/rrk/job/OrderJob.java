@@ -2,7 +2,6 @@ package com.rrk.job;
 
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.rrk.dao.CitiesMapper;
 import com.rrk.entity.OmsOrder;
 import com.rrk.entity.OpsProduct;
@@ -46,7 +45,7 @@ public class OrderJob extends IJobHandler {
         log.info("-----------------------------自动生成订单开始执行------------------------");
         List<OmsOrder> omsOrders = new ArrayList<>();
         List<OrderDetail> orderDetails = new ArrayList<>();
-        for (int i = 0; i <60 ; i++) {
+        for (int i = 0; i <300 ; i++) {
             //随机生成商品id
             OmsOrder omsOrder;
             OrderDetail orderDetail;
@@ -110,8 +109,8 @@ public class OrderJob extends IJobHandler {
             }
             int num = new Random().nextInt(3)+1;
             for (int j = 0; j <num ; j++) {
-                int productId = new Random().nextInt(50) + 92000;
-                OpsProduct opsProduct = opsProductService.getOne(new QueryWrapper<OpsProduct>().eq("id", productId));
+                int productId = new Random().nextInt(2000) + 180000;
+                OpsProduct opsProduct = opsProductService.getById(productId);
                 if (ObjectUtil.isNotNull(opsProduct)) {
                     amount =  NumberUtil.add(amount,opsProduct.getAmount());
                     //订单详情
@@ -131,7 +130,7 @@ public class OrderJob extends IJobHandler {
                         opsProduct.setStock(opsProduct.getStock() -orderDetail.getProductNum());
                     }
                     orderDetails.add(orderDetail);
-                    opsProductService.updateById(opsProduct);
+                    //opsProductService.updateById(opsProduct);
                 }
 
             }

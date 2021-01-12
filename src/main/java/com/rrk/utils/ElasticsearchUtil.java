@@ -26,7 +26,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -128,7 +127,7 @@ public class ElasticsearchUtil<T> {
     /**
      * 订单按照品牌分类统计
      */
-    public static List<OrderStaticticDto> getStaticticOrders(String orderIndex, TermsAggregationBuilder aggregationBuilder, TermQueryBuilder query) {
+    public static List<OrderStaticticDto> getStaticticOrders(String orderIndex, TermsAggregationBuilder aggregationBuilder, QueryBuilder query) {
         List<OrderStaticticDto> list = new ArrayList<>();
         SearchRequest searchRequest = new SearchRequest(orderIndex);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -141,7 +140,7 @@ public class ElasticsearchUtil<T> {
         try {
             //搜索结果
             searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-            log.info("按照品牌分类订单结果：" + searchResponse);
+            //log.info("按照品牌分类订单结果：" + searchResponse);
         } catch (IOException e) {
             e.printStackTrace();
         }

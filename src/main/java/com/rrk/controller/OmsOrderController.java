@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rrk.dto.OrderDayDto;
 import com.rrk.dto.OrderStaticticDto;
+import com.rrk.dto.OrderUserDto;
 import com.rrk.entity.OmsOrder;
 import com.rrk.entity.Result;
 import com.rrk.service.IOmsOrderService;
@@ -51,6 +52,22 @@ public class OmsOrderController {
     @ApiOperation(value = "按照品牌来统计订单销量情况", httpMethod = "GET")
     public Result getStaticticOrders() {
         List<OrderStaticticDto> list = omsOrderService.getStaticticOrders();
+        //对数据进行处理
+//        OrderBrandDto brandDto = new OrderBrandDto();
+//        List<String> brands = new ArrayList<>();
+//        List<Integer> counts = new ArrayList<>();
+//        List<Integer> nums = new ArrayList<>();
+//        List<BigDecimal> amounts = new ArrayList<>();
+//        for (OrderStaticticDto dto : list) {
+//           brands.add(dto.getBrand());
+//           counts.add(dto.getOrderCount());
+//           nums.add(dto.getNums());
+//           amounts.add(dto.getAmount());
+//        }
+//        brandDto.setBrandName(brands);
+//        brandDto.setOrderCount(counts);
+//        brandDto.setNums(nums);
+//        brandDto.setAmount(amounts);
         return new Result(200, "操作成功", list);
     }
 
@@ -64,6 +81,17 @@ public class OmsOrderController {
         List<OrderDayDto> list = omsOrderService.getStatisticsByDay(startTime, endTime);
         return new Result(200, "操作成功", list);
 
+    }
+
+    /**
+     * 每日付费人数（总人数，新人，老用户人数）
+     */
+    @GetMapping(value = "/getTotalPay")
+    @ApiOperation(value = "每日付费的总人数（记得要去重）",httpMethod = "GET")
+    public Result getTotalPay(@RequestParam(value = "startTime") String startTime,
+                              @RequestParam(value = "endTime") String endTime){
+        List<OrderUserDto> dtos = omsOrderService.getTotalPay(startTime, endTime);
+        return new Result(200, "操作成功", dtos);
     }
 
 }

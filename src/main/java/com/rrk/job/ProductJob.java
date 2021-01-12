@@ -35,7 +35,7 @@ public class ProductJob extends IJobHandler {
 
 
 
-    private final static String PRODUCT_URL = "https://search.jd.com/Search?keyword=索尼&wq=索尼&s=104&click=1&page=";
+    private final static String PRODUCT_URL = "https://search.jd.com/Search?keyword=海尔&wq=海尔&s=104&click=1&page=";
 
 
     @Autowired
@@ -107,7 +107,7 @@ public class ProductJob extends IJobHandler {
                         ops = new OpsProduct();
                         ops.setId(skuId);
                         ops.setAmount(Convert.toBigDecimal(price));
-                        ops.setProductBrand("索尼");
+                        ops.setProductBrand("海尔");
                         ops.setProductName(title);
                         ops.setProductPrice(Convert.toBigDecimal(price));
                         ops.setProductNo("ops"+new Random(4).nextInt(9));
