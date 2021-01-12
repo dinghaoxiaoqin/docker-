@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -117,22 +119,85 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
      */
     @Override
     public List<OrderUserDto> getTotalPay(String startTime, String endTime) {
+        //线程安全计数器
+        long begin = System.currentTimeMillis();
+        AtomicInteger totalTh = new AtomicInteger(0);
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 4, 1500, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(4));
+        CountDownLatch latch = new CountDownLatch(3);
         List<OrderUserDto> dtos = new ArrayList<>();
         try {
             Date start = DateUtil.parse(startTime, "yyyy-MM-dd hh:mm:ss");
             Date end = DateUtil.parse(endTime, "yyyy-MM-dd hh:mm:ss");
             //每天的总人数
-            List<Map<String, Object>> totalList = omsOrderMapper.getTotalPay(start, end);
+            List<Map<String, Object>> totalList = getTotalCount(executor, latch, totalTh, start, end);
+            //  List<Map<String, Object>> totalList = omsOrderMapper.getTotalPay(start, end);
             //每天的新人
-            List<Map<String, Object>> newList = omsOrderMapper.getTotalNewPay(start, end);
+            List<Map<String, Object>> newList = getNewList(executor,latch,totalTh,start,end);
+            //List<Map<String, Object>> newList = omsOrderMapper.getTotalNewPay(start, end);
             //老用户
-            List<Map<String, Object>> oldList = omsOrderMapper.getTotalOldPay(start, end);
-            //数据处理
+            List<Map<String, Object>> oldList = getOldList(executor,latch,totalTh,start,end);
+
+           // List<Map<String, Object>> oldList = omsOrderMapper.getTotalOldPay(start, end);
+            //关闭线程池
+
+            latch.await();
+            //所有子线程都执行完成，主线程执行
+            //log.info("线程池运行情况："+totalTh.get());
             dtos = handler(dtos, totalList, newList, oldList);
+
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            executor.shutdown();
+            System.out.println("线程池关闭");
         }
+        long last = System.currentTimeMillis();
+        System.out.println("用时：" + (last - begin));
         return dtos;
+    }
+
+    private List<Map<String,Object>> getOldList(ThreadPoolExecutor executor, CountDownLatch latch, AtomicInteger totalTh, Date start, Date end) {
+        List<Map<String, Object>> list1 = new ArrayList<>();
+        executor.execute(() -> {
+            List<Map<String, Object>> list = omsOrderMapper.getTotalOldPay(start, end);
+            list1.addAll(list);
+            //System.out.println("第三个线程执行完成"+list.size());
+            latch.countDown();
+
+        });
+        //计数
+        totalTh.incrementAndGet();
+
+        return list1;
+    }
+
+    private List<Map<String,Object>> getNewList(ThreadPoolExecutor executor, CountDownLatch latch, AtomicInteger totalTh, Date start, Date end) {
+        List<Map<String, Object>> list1 = new ArrayList<>();
+        executor.execute(() -> {
+            List<Map<String, Object>> list = omsOrderMapper.getTotalNewPay(start, end);
+            list1.addAll(list);
+            latch.countDown();
+            //System.out.println("第二个线程执行完成"+list.size());
+
+        });
+        //计数
+        totalTh.incrementAndGet();
+
+        return list1;
+    }
+
+    private List<Map<String, Object>> getTotalCount(ThreadPoolExecutor executor, CountDownLatch latch, AtomicInteger totalTh, Date start, Date end) {
+        List<Map<String, Object>> list1 = new ArrayList<>();
+        executor.execute(() -> {
+            List<Map<String, Object>> list = omsOrderMapper.getTotalPay(start, end);
+            list1.addAll(list);
+            latch.countDown();
+            //System.out.println("第一个线程执行完成"+list.size());
+
+        });
+        //计数
+        totalTh.incrementAndGet();
+        return list1;
     }
 
     /**
