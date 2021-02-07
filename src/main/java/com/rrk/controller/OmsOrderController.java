@@ -4,9 +4,7 @@ package com.rrk.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.rrk.dto.OrderDayDto;
-import com.rrk.dto.OrderStaticticDto;
-import com.rrk.dto.OrderUserDto;
+import com.rrk.dto.*;
 import com.rrk.entity.OmsOrder;
 import com.rrk.entity.Result;
 import com.rrk.service.IOmsOrderService;
@@ -15,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
 import java.util.List;
 
 /**
@@ -87,11 +86,37 @@ public class OmsOrderController {
      * 每日付费人数（总人数，新人，老用户人数）
      */
     @GetMapping(value = "/getTotalPay")
-    @ApiOperation(value = "每日付费的总人数（记得要去重）",httpMethod = "GET")
+    @ApiOperation(value = "每日付费的总人数（记得要去重）", httpMethod = "GET")
     public Result getTotalPay(@RequestParam(value = "startTime") String startTime,
-                              @RequestParam(value = "endTime") String endTime){
+                              @RequestParam(value = "endTime") String endTime) {
         List<OrderUserDto> dtos = omsOrderService.getTotalPay(startTime, endTime);
         return new Result(200, "操作成功", dtos);
+    }
+
+    /**
+     * 新用户按照时间统计首单购买的商品信息
+     */
+    @GetMapping(value = "/getNewOrderPro")
+    @ApiOperation(value = "新用户按照时间统计首单购买的商品信息", httpMethod = "GET")
+    public Result getNewOrderPro(
+            @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
+            @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
+            @RequestParam(value = "startTime") String startTime,
+            @RequestParam(value = "endTime") String endTime,
+            @RequestParam(value = "productBrand", required = false) String productBrand) throws ParseException {
+        List<OrderNewProductDto> dtos = omsOrderService.getNewOrderPro(pageNo, pageSize, startTime, endTime, productBrand);
+        return new Result(200, "操作成功", dtos);
+    }
+
+    /**
+     * 各个省份下品牌销量前10的品牌数据
+     */
+    @GetMapping(value = "/getProvinceBrand")
+    @ApiOperation(value = "各个省份下品牌销量前10的品牌数据", httpMethod = "GET")
+    public Result getProvinceBrand(@RequestParam(value = "startTime") String startTime,
+                                   @RequestParam(value = "endTime") String endTime) {
+        List<ProvinceDto> list = omsOrderService.getProvinceBrand(startTime, endTime);
+        return new Result(200, "操作成功", list);
     }
 
 }

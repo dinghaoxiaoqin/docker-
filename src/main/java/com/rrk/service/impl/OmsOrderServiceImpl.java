@@ -7,27 +7,27 @@ import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.rrk.constants.EsContants;
 import com.rrk.dao.OmsOrderMapper;
-import com.rrk.dto.OrderDayDto;
-import com.rrk.dto.OrderStaticticDto;
-import com.rrk.dto.OrderUserDto;
+import com.rrk.dto.*;
 import com.rrk.entity.OmsOrder;
 import com.rrk.service.IOmsOrderService;
 import com.rrk.utils.ElasticsearchUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.BucketSelectorPipelineAggregationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -85,16 +85,16 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
     public List<OrderDayDto> getStatisticsByDay(String startTime, String endTime) {
         List<OrderDayDto> list = new ArrayList<>();
         try {
-            // Date start = DateUtil.parse(startTime, "yyyy-MM-dd hh:mm:ss");
-            //  Date end = DateUtil.parse(endTime, "yyyy-MM-dd hh:mm:ss");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+             //Date start = DateUtil.parse(startTime, "yyyy-MM-dd hh:mm:ss");
+            // Date end = DateUtil.parse(endTime, "yyyy-MM-dd hh:mm:ss");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date start = sdf.parse(startTime);
             Date end = sdf.parse(endTime);
             //从es获取按照天统计数据
             BoolQueryBuilder builder = QueryBuilders.boolQuery();
             List<QueryBuilder> must = builder.must();
             TermQueryBuilder termQuery = QueryBuilders.termQuery("orderstatus", 3);
-            RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("createtime").gte(startTime).lt(endTime).format("yyyy-MM-dd");
+            RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("createtime").gte(start).lt(end);
             must.add(termQuery);
             must.add(rangeQueryBuilder);
             DateHistogramAggregationBuilder aggregationBuilder = AggregationBuilders.dateHistogram("product_per_day").calendarInterval(new DateHistogramInterval("day")).field("createtime")
@@ -122,7 +122,7 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
         //线程安全计数器
         long begin = System.currentTimeMillis();
         AtomicInteger totalTh = new AtomicInteger(0);
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 4, 1500, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(4));
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(3, 5, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(512));
         CountDownLatch latch = new CountDownLatch(3);
         List<OrderUserDto> dtos = new ArrayList<>();
         try {
@@ -152,8 +152,90 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
             System.out.println("线程池关闭");
         }
         long last = System.currentTimeMillis();
-        System.out.println("用时：" + (last - begin));
+        System.out.println("用时-----------------------------：" + (last - begin));
         return dtos;
+    }
+
+    /**
+     * 新用户按照时间统计首单购买的商品信息
+     * @param startTime
+     * @param endTime
+     * @param productBrand
+     * @return
+     */
+    @Override
+    public List<OrderNewProductDto> getNewOrderPro(Integer pageNo,Integer pageSize,String startTime, String endTime, String productBrand) throws ParseException {
+        long begin = System.currentTimeMillis();
+        //从es中获取相应数据
+        List<OrderNewProductDto> list = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date start = sdf.parse(startTime);
+        Date end = sdf.parse(endTime);
+        BoolQueryBuilder bool = QueryBuilders.boolQuery();
+        RangeQueryBuilder statusBuilder = QueryBuilders.rangeQuery("orderstatus").gte(1).lte(3);
+        RangeQueryBuilder timeBuilder = QueryBuilders.rangeQuery("createtime").lte(end);
+        bool.must(statusBuilder);
+        bool.must(timeBuilder);
+        //进行聚合分析
+        TermsAggregationBuilder builder = AggregationBuilders.terms("user_name_term").field("username").size(1000)
+                .order(BucketOrder.aggregation("user_name_count", true))
+                .subAggregation(AggregationBuilders.count("user_name_count").field("username"));
+        //类似having的脚本
+        //声明BucketPath，用于后面的bucket筛选
+        Map<String, String> bucketsPathsMap = new HashMap<>(8);
+        bucketsPathsMap.put("user_name_count", "user_name_count");
+        Script script = new Script("params.user_name_count ==1");
+        //构建bucket选择器
+        BucketSelectorPipelineAggregationBuilder bs =
+                PipelineAggregatorBuilders.bucketSelector("user_name_having", bucketsPathsMap, script);
+        builder.subAggregation(bs);
+        List<String> userNames = ElasticsearchUtil.getUserNames(EsContants.ORDER_INDEX,bool,builder);
+        if (CollUtil.isNotEmpty(userNames)) {
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            RangeQueryBuilder orderstatus = QueryBuilders.rangeQuery("orderstatus").gte(1).lte(3);
+            RangeQueryBuilder createtime = QueryBuilders.rangeQuery("createtime").lte(end);
+            TermQueryBuilder query = QueryBuilders.termQuery("username",userNames);
+            boolQuery.must(orderstatus);
+            boolQuery.must(createtime);
+            boolQuery.must(query);
+            list =  ElasticsearchUtil.getOrderProduct(EsContants.ORDER_INDEX,boolQuery,pageNo,pageSize);
+        }
+        //List<OrderNewProductDto> list = omsOrderMapper.getNewOrderPro(start,end,productBrand);
+        long last = System.currentTimeMillis();
+        System.out.println("用的时间："+(last-begin));
+        return list;
+    }
+
+    /**
+     * 各个省份下品牌销量前10的品牌数据
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    @Override
+    public List<ProvinceDto> getProvinceBrand(String startTime, String endTime) {
+        List<ProvinceDto> list = new ArrayList<>();
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date start = sdf.parse(startTime);
+            Date end = sdf.parse(endTime);
+            BoolQueryBuilder bool = QueryBuilders.boolQuery();
+            List<QueryBuilder> must = bool.must();
+            RangeQueryBuilder statusBuilder = QueryBuilders.rangeQuery("orderstatus").gte(1).lte(3);
+            RangeQueryBuilder timeBuilder = QueryBuilders.rangeQuery("createtime").lte(end);
+            must.add(statusBuilder);
+            must.add(timeBuilder);
+            TermsAggregationBuilder term = AggregationBuilders.terms("province_term").field("receiverprovince.keyword").size(32);
+            TermsAggregationBuilder builder = AggregationBuilders.terms("brand_term").field("productbrand.keyword").size(10)
+                    .order(BucketOrder.aggregation("brand_count", false))
+                    .subAggregation(AggregationBuilders.sum("brand_count").field("productnum"));
+            term.subAggregation(builder);
+            list =  ElasticsearchUtil.getProvinceBrand(EsContants.ORDER_INDEX,bool,term,list);
+        } catch (Exception e){
+            log.error("各个省份下品牌销量前10的品牌异常：e->{}",e);
+        }
+
+        return list;
     }
 
     private List<Map<String,Object>> getOldList(ThreadPoolExecutor executor, CountDownLatch latch, AtomicInteger totalTh, Date start, Date end) {
@@ -261,4 +343,6 @@ public class OmsOrderServiceImpl extends ServiceImpl<OmsOrderMapper, OmsOrder> i
 //        dto.setTrendDtos(trendDtos);
         return dtos;
     }
+
+
 }

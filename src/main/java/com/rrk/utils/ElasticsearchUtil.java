@@ -3,8 +3,7 @@ package com.rrk.utils;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import com.alibaba.fastjson.JSON;
-import com.rrk.dto.OrderDayDto;
-import com.rrk.dto.OrderStaticticDto;
+import com.rrk.dto.*;
 import com.rrk.entity.EsEntity;
 import com.rrk.entity.EsPageEntiry;
 import lombok.extern.slf4j.Slf4j;
@@ -108,7 +107,7 @@ public class ElasticsearchUtil<T> {
         long totalHits = searchResponse.getHits().getTotalHits().value;
         log.info("搜索的结果编码：resultCode->{}", searchResponse.status().getStatus());
         if (searchResponse.status().getStatus() == 200) {
-           Aggregation aggregation = searchResponse.getAggregations().get("weighted_salecount");
+            Aggregation aggregation = searchResponse.getAggregations().get("weighted_salecount");
             System.out.println("aggregation:" + aggregation);
             Map<String, Object> metaData = aggregation.getMetaData();
             System.out.println(metaData);
@@ -163,15 +162,17 @@ public class ElasticsearchUtil<T> {
         }
         return list;
     }
+
     /**
      * 按照天来统计订单数据
+     *
      * @param orderIndex
      * @param aggregationBuilder
      * @param builder
      * @return
      */
     public static List<OrderDayDto> getStaticticOrderByDay(String orderIndex, DateHistogramAggregationBuilder aggregationBuilder, BoolQueryBuilder builder) {
-    List<OrderDayDto> list = new ArrayList<>();
+        List<OrderDayDto> list = new ArrayList<>();
         SearchRequest searchRequest = new SearchRequest(orderIndex);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.size(0);
@@ -205,6 +206,87 @@ public class ElasticsearchUtil<T> {
                 }
             }
         }
+        return list;
+    }
+
+    public static List<String> getUserNames(String orderIndex, BoolQueryBuilder bool, TermsAggregationBuilder builder) {
+        List<String> list = new ArrayList<>();
+        SearchRequest searchRequest = new SearchRequest(orderIndex);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(0);
+        // 绑定条件
+        searchSourceBuilder.query(bool);
+        searchSourceBuilder.aggregation(builder);
+        searchRequest.source(searchSourceBuilder);
+        SearchResponse searchResponse = null;
+        try {
+            //搜索结果
+            searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            //log.info("按照品牌分类订单结果：" + searchResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (searchResponse.status().getStatus() == 200) {
+
+            Terms aggregation = searchResponse.getAggregations().get("user_name_term");
+            List<? extends Terms.Bucket> buckets = aggregation.getBuckets();
+            if (CollUtil.isNotEmpty(buckets)) {
+                for (Terms.Bucket bucket : buckets) {
+                    String key = bucket.getKey().toString();
+                    list.add(key);
+                }
+            }
+        }
+        return list;
+    }
+
+    public static List<ProvinceDto> getProvinceBrand(String orderIndex, BoolQueryBuilder bool, TermsAggregationBuilder term, List<ProvinceDto> list) {
+        SearchRequest searchRequest = new SearchRequest(orderIndex);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(0);
+        // 绑定条件
+        searchSourceBuilder.query(bool);
+        searchSourceBuilder.aggregation(term);
+        searchRequest.source(searchSourceBuilder);
+        SearchResponse searchResponse = null;
+        try {
+            //搜索结果
+            searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            //log.info("按照品牌分类订单结果：" + searchResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (searchResponse.status().getStatus() == 200) {
+
+            Terms aggregation = searchResponse.getAggregations().get("province_term");
+            List<? extends Terms.Bucket> buckets = aggregation.getBuckets();
+            if (CollUtil.isNotEmpty(buckets)) {
+                for (Terms.Bucket bucket : buckets) {
+                    ProvinceDto dto = new ProvinceDto();
+                    //省份数据
+                    String key = bucket.getKey().toString();
+                    Integer provinceCount = 0;
+                    Terms brandTerm = bucket.getAggregations().get("brand_term");
+                    List<? extends Terms.Bucket> brandTermBuckets = brandTerm.getBuckets();
+                    List<BrandDto> brandDtos = new ArrayList<>();
+                    for (Terms.Bucket termBucket : brandTermBuckets) {
+                        BrandDto brandDto = new BrandDto();
+                        String s = termBucket.getKey().toString();
+                        brandDto.setBrandName(s);
+                        ParsedSum brandCount = termBucket.getAggregations().get("brand_count");
+                        Integer integer = Convert.toInt(brandCount.getValue());
+                        provinceCount = provinceCount + integer;
+                        brandDto.setBrandCount(integer);
+                        brandDtos.add(brandDto);
+                    }
+                    dto.setProvinceName(key);
+                    dto.setProvinceCount(provinceCount);
+                    dto.setBrandDtos(brandDtos);
+                    list.add(dto);
+                }
+            }
+        }
+
         return list;
     }
 
@@ -272,26 +354,25 @@ public class ElasticsearchUtil<T> {
 //
 //        return null;
 //    }
-
-    public static EsPageEntiry searchNameDataPage(String mysqlToIndex, Integer startPage, Integer pageSize, QueryBuilder query, Integer saleOrder, Integer priceOrder,String highlightField) {
+    public static EsPageEntiry searchNameDataPage(String mysqlToIndex, Integer startPage, Integer pageSize, QueryBuilder query, Integer saleOrder, Integer priceOrder, String highlightField) {
         SearchRequest searchRequest = new SearchRequest(mysqlToIndex);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         //设置一个可选的超时，控制允许搜索的时间
         searchSourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
         //排序字段
-        if (saleOrder !=-1) {
+        if (saleOrder != -1) {
             //1 倒序排, 2正序排
             if (saleOrder == 1) {
-                searchSourceBuilder.query(query).sort("salecount",SortOrder.DESC);
+                searchSourceBuilder.query(query).sort("salecount", SortOrder.DESC);
             } else {
-                searchSourceBuilder.query(query).sort("salecount",SortOrder.ASC);
+                searchSourceBuilder.query(query).sort("salecount", SortOrder.ASC);
             }
         }
-        if (priceOrder !=-1) {
+        if (priceOrder != -1) {
             if (priceOrder == 1) {
-                searchSourceBuilder.query(query).sort("saleprice",SortOrder.ASC);
+                searchSourceBuilder.query(query).sort("saleprice", SortOrder.ASC);
             } else {
-                searchSourceBuilder.query(query).sort("saleprice",SortOrder.DESC);
+                searchSourceBuilder.query(query).sort("saleprice", SortOrder.DESC);
             }
         }
         // 设置是否按查询匹配度排序
@@ -353,7 +434,73 @@ public class ElasticsearchUtil<T> {
         return null;
     }
 
+    public static List<OrderNewProductDto> getOrderProduct(String orderIndex, BoolQueryBuilder boolQuery, Integer pageNo, Integer pageSize) {
+        List<OrderNewProductDto> list = new ArrayList<>();
+        SearchRequest searchRequest = new SearchRequest(orderIndex);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        //设置一个可选的超时，控制允许搜索的时间
+        searchSourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
 
+
+        if (pageNo > (10000 - pageSize)) {
+            searchSourceBuilder.query(boolQuery);
+            searchSourceBuilder
+                    // .setScroll(TimeValue.timeValueMinutes(1))
+                    .size(10000);
+            //打印的内容 可以在 Elasticsearch head 和 Kibana  上执行查询
+            // LOGGER.info("\n{}", searchSourceBuilder);
+            // 执行搜索,返回搜索响应信息
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = null;
+            try {
+                searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            long totalHits = searchResponse.getHits().getTotalHits().value;
+//            if (searchResponse.status().getStatus() == 200) {
+//                //使用scrollId迭代查询
+//                List<EsEntity> result = disposeScrollResult(searchResponse);
+//                List<EsEntity> sourceList = result.stream().parallel().skip((startPage - 1 - (10000 / pageSize)) * pageSize).limit(pageSize).collect(Collectors.toList());
+//                return new EsPageEntiry(pageNo, pageSize, (int) totalHits, sourceList);
+//            }
+        } else {//浅度分页
+            searchSourceBuilder.query(boolQuery);
+            // 分页应用
+            searchSourceBuilder
+                    //设置from确定结果索引的选项以开始搜索。默认为0
+                    .from((pageNo - 1) * pageSize)
+                    //设置size确定要返回的搜索匹配数的选项。默认为10
+                    .size(pageSize);
+            //打印的内容 可以在 Elasticsearch head 和 Kibana  上执行查询
+            // LOGGER.info("\n{}", searchSourceBuilder);
+            // 执行搜索,返回搜索响应信息
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = null;
+            try {
+                searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            long totalHits = searchResponse.getHits().getTotalHits().value;
+
+            if (searchResponse.status().getStatus() == 200) {
+
+                // 解析对象
+                //     List<EsEntity> sourceList = setSearchResponse(searchResponse, highlightField);
+//                return new EsPageEntiry(startPage, pageSize, (int) totalHits, sourceList);
+
+                SearchHit[] hits = searchResponse.getHits().getHits();
+                if (hits != null && hits.length > 0) {
+                    for (SearchHit hit : hits) {
+                        String sourceAsString = hit.getSourceAsString();
+                    }
+                }
+
+            }
+        }
+        return list;
+    }
 
 
     /**
@@ -475,9 +622,9 @@ public class ElasticsearchUtil<T> {
         if (StringUtils.isNotBlank(sortField)) {
             if (sortField.contains(",")) {
                 String[] split = sortField.split(",");
-                searchSourceBuilder.query(query).sort(split[0],SortOrder.DESC).sort(split[1],SortOrder.DESC);
+                searchSourceBuilder.query(query).sort(split[0], SortOrder.DESC).sort(split[1], SortOrder.DESC);
             } else {
-                searchSourceBuilder.query(query).sort(sortField,SortOrder.DESC);
+                searchSourceBuilder.query(query).sort(sortField, SortOrder.DESC);
             }
         }
         // 高亮（xxx=111,aaa=222）
@@ -587,7 +734,7 @@ public class ElasticsearchUtil<T> {
             //搜索结果
             searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
         } catch (IOException e) {
-           e.printStackTrace();
+            e.printStackTrace();
         }
         //一共查到多少条数据
         long totalHits = searchResponse.getHits().getTotalHits().value;
@@ -619,7 +766,7 @@ public class ElasticsearchUtil<T> {
      * 获取高亮结果集
      *
      * @param: [hit, highlightField]
-     * @return: java.util.Map<java.lang.String, java.lang.Object>
+     * @return: java.util.Map<java.lang.String       ,               java.lang.Object>
      * @auther: LHL
      */
     private static EsEntity getResultMap(SearchHit hit, String highlightField) {
@@ -675,7 +822,7 @@ public class ElasticsearchUtil<T> {
      * 处理scroll结果
      *
      * @param: [response, highlightField]
-     * @return: java.util.List<java.util.Map < java.lang.String, java.lang.Object>>
+     * @return: java.util.List<java.util.Map               <               java.lang.String       ,               java.lang.Object>>
      * @auther: LHL
      */
     private static List<EsEntity> disposeScrollResult(SearchResponse response, String highlightField) {

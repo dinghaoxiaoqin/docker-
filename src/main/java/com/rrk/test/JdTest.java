@@ -1,8 +1,11 @@
 package com.rrk.test;
 
+import cn.hutool.core.util.StrUtil;
 import com.rrk.entity.Consumer;
 import com.rrk.entity.Producer;
 import com.rrk.entity.Store;
+import com.rrk.entity.TbOrder;
+import com.rrk.factory.OrderFactory;
 import com.rrk.utils.HttpUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +37,9 @@ public class JdTest {
      * 生产者与消费者
      */
     @Test
-    public void test02(){
+    public void test02() {
         Store store = new Store();
-       // 创建2个生产者
+        // 创建2个生产者
 //        for (int i = 0; i < 100 ; i++) {
 //           new Thread(new Producer(store)).start();
 //        }
@@ -66,7 +69,7 @@ public class JdTest {
      * 采用阻塞队列来解决问题
      */
     @Test
-    public void test03() throws Exception{
+    public void test03() throws Exception {
         // 声明一个容量为10的缓存队列
         BlockingQueue<String> queue = new LinkedBlockingQueue<String>(10);
 
@@ -77,8 +80,8 @@ public class JdTest {
         Consumer consumer = new Consumer(queue);
 
         // 借助Executors
-       // ExecutorService service = Executors.newCachedThreadPool();
-       ThreadPoolExecutor executor =  new ThreadPoolExecutor(4,5,60,TimeUnit.SECONDS, new LinkedBlockingQueue());
+        // ExecutorService service = Executors.newCachedThreadPool();
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(4, 5, 60, TimeUnit.SECONDS, new LinkedBlockingQueue());
         // 启动线程
         executor.execute(producer1);
         executor.execute(producer2);
@@ -100,7 +103,7 @@ public class JdTest {
      * countdownlatch的使用
      */
     @Test
-    public void test06(){
+    public void test06() {
         // 线程安全的计数器
         AtomicInteger totalRows = new AtomicInteger(0);
         List<Integer> list = new ArrayList<>();
@@ -108,9 +111,9 @@ public class JdTest {
 
         // 初始化CountDownLatch，大小为3
         CountDownLatch countDownLatch = new CountDownLatch(3);
-        List<Integer> list1 = getList1(executor,countDownLatch,totalRows);
-        List<Integer> list2 = getList2(executor,countDownLatch,totalRows);
-        List<Integer> list3 = getList3(executor,countDownLatch,totalRows);
+        List<Integer> list1 = getList1(executor, countDownLatch, totalRows);
+        List<Integer> list2 = getList2(executor, countDownLatch, totalRows);
+        List<Integer> list3 = getList3(executor, countDownLatch, totalRows);
         //关闭线程池
         executor.shutdown();
         try {
@@ -122,12 +125,12 @@ public class JdTest {
         list.addAll(list2);
         list.addAll(list3);
         for (Integer integer : list) {
-            System.out.println("数字："+integer);
+            System.out.println("数字：" + integer);
         }
         // 打印线程池运行状态
         System.out.println("线程池中线程数目：" + executor.getPoolSize() + "，队列中等待执行的任务数目：" +
                 executor.getQueue().size() + "，已执行结束的任务数目：" + executor.getCompletedTaskCount());
-        System.out.println("集合大小："+list.size());
+        System.out.println("集合大小：" + list.size());
         //打印次数
         System.out.println(totalRows.get());
 
@@ -135,8 +138,8 @@ public class JdTest {
 
     private List<Integer> getList3(ThreadPoolExecutor executor, CountDownLatch countDownLatch, AtomicInteger totalRows) {
         List<Integer> list = new ArrayList<>();
-        executor.execute(()->{
-            for (int i = 61; i <90 ; i++) {
+        executor.execute(() -> {
+            for (int i = 61; i < 90; i++) {
                 list.add(i);
             }
             countDownLatch.countDown();
@@ -148,8 +151,8 @@ public class JdTest {
 
     private List<Integer> getList2(ThreadPoolExecutor executor, CountDownLatch countDownLatch, AtomicInteger totalRows) {
         List<Integer> list = new ArrayList<>();
-        executor.execute(()->{
-            for (int i = 31; i <60 ; i++) {
+        executor.execute(() -> {
+            for (int i = 31; i < 60; i++) {
                 list.add(i);
             }
             countDownLatch.countDown();
@@ -161,8 +164,8 @@ public class JdTest {
 
     private List<Integer> getList1(ThreadPoolExecutor executor, CountDownLatch countDownLatch, AtomicInteger totalRows) {
         List<Integer> list = new ArrayList<>();
-        executor.execute(()->{
-            for (int i = 0; i <30 ; i++) {
+        executor.execute(() -> {
+            for (int i = 0; i < 30; i++) {
                 list.add(i);
             }
             countDownLatch.countDown();
@@ -170,6 +173,35 @@ public class JdTest {
             System.out.println("第一个线程执行完成");
         });
         return list;
+    }
+
+
+    @Autowired
+    private OrderFactory orderFactory;
+
+    @Test
+    public void  test07(){
+        TbOrder order = new TbOrder();
+        order.setOrderNo("2222222");
+        order.setSource("11111");
+        if (StrUtil.isBlank(TbOrder.Source.getSourceType(order.getSource()))) {
+            System.out.println("该来源的订单不存在");
+        } else {
+            orderFactory.orderHandle(order);
+        }
+    }
+
+
+    @Test
+    public void  test08(){
+        TbOrder order = new TbOrder();
+        order.setOrderNo("2222222");
+        order.setSource("mini");
+        if (StrUtil.isBlank(TbOrder.Source.getSourceType(order.getSource()))) {
+            System.out.println("该来源的订单不存在");
+        } else {
+            orderFactory.orderHandle1(order);
+        }
     }
 
 }

@@ -3,6 +3,7 @@ package com.rrk.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.rrk.dto.OrderDayDto;
+import com.rrk.dto.OrderNewProductDto;
 import com.rrk.dto.OrderStaticticDto;
 import com.rrk.entity.OmsOrder;
 import org.apache.ibatis.annotations.Param;
@@ -30,4 +31,6 @@ public interface OmsOrderMapper extends BaseMapper<OmsOrder> {
     List<Map<String,Object>> getTotalNewPay(@Param("start") Date start, @Param("end") Date end);
 
     List<Map<String,Object>> getTotalOldPay(@Param("start") Date start, @Param("end") Date end);
+
+    List<OrderNewProductDto> getNewOrderPro(@Param("start") Date start, @Param("end") Date end, @Param("productBrand") String productBrand);
 }

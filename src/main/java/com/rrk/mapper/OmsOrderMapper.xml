@@ -106,5 +106,22 @@
         GROUP BY
         oms.createTime
     </select>
+    <select id="getNewOrderPro" resultType="com.rrk.dto.OrderNewProductDto">
+             SELECT o.userName,d.product_name AS productName ,c.receiver_province AS receiverName,
+ d.product_brand AS productBrand, d.real_amount AS salePrice ,SUM(d.product_num) AS nums
+  FROM
+(
+SELECT a.user_name AS userName ,COUNT(a.user_name) AS userCount FROM oms_order a LEFT JOIN order_detail b ON a.order_no = b.order_no
+WHERE b.product_id  IS NOT  NULL AND a.create_time BETWEEN #{start} AND #{end}
+ <if test="productBrand != null and productBrand != ''">
+     and b.product_brand = #{productBrand}
+ </if>
+ AND a.order_status IN (1,2,3)
+GROUP BY a.user_name HAVING userCount =1
+) o
+ LEFT JOIN  oms_order c  ON o.userName = c.user_name
+ LEFT JOIN order_detail d ON c.order_no = d.order_no
+ GROUP BY d.product_id ORDER BY nums DESC
+    </select>
 
 </mapper>

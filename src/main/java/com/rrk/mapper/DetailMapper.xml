@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rrk.dao.DetailMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.rrk.entity.Detail">
+        <id column="id" property="id" />
+        <result column="main_id" property="mainId" />
+        <result column="pro_brand" property="proBrand" />
+        <result column="pro_name" property="proName" />
+        <result column="pro_no" property="proNo" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id,main_id, pro_brand, pro_name, pro_no, create_time
+    </sql>
+
+</mapper>
