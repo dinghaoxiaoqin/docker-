@@ -11,7 +11,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -26,8 +26,8 @@ public class RabbitmqUtils implements RabbitTemplate.ConfirmCallback,RabbitTempl
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-//    @Autowired
-//    private StringRedisTemplate redisTemplate;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     /**
      * 确定消息是否发送到交换机
@@ -70,7 +70,7 @@ public class RabbitmqUtils implements RabbitTemplate.ConfirmCallback,RabbitTempl
             //给定唯一标识（保证幂等性）
             CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
             //将mq发送的消息在redis中进行备份
-            //redisTemplate.opsForHash().put("mq_data",correlationData.getId(),JSON.toJSONString(detail));
+            redisTemplate.opsForHash().put("mq_data",correlationData.getId(),JSON.toJSONString(detail));
             //int i = 1/0;
             rabbitTemplate.convertAndSend("detail_exchange","detail_routing",build,correlationData);
             System.out.println("发送消息对mq成功的id:"+correlationData.getId());
@@ -96,7 +96,7 @@ public class RabbitmqUtils implements RabbitTemplate.ConfirmCallback,RabbitTempl
             //给定唯一标识（保证幂等性）
             CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
             //将mq发送的消息在redis中进行备份
-          //  redisTemplate.opsForHash().put("mq_data",correlationData.getId(),JSON.toJSONString(detail));
+            redisTemplate.opsForHash().put("mq_data",correlationData.getId(),JSON.toJSONString(detail));
             //int i = 1/0;
             rabbitTemplate.convertAndSend("detail_exchange","dead_routing",build,correlationData);
             System.out.println("发送死信消息对mq成功的id:"+correlationData.getId());

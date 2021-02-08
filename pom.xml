@@ -57,10 +57,10 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
             <version>2.1.8.RELEASE</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.springframework.boot</groupId>-->
-            <!--<artifactId>spring-boot-starter-data-redis</artifactId>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <!--<dependency>-->
         <!--<groupId>org.springframework.cloud</groupId>-->
         <!--<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>-->
@@ -131,6 +131,11 @@
             <artifactId>mybatis-plus-boot-starter</artifactId>
             <version>3.0.6</version>
         </dependency>
+        <!--面向切面-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
         <!-- 引入swagger2 -->
         <dependency>
             <groupId>io.springfox</groupId>
@@ -148,11 +153,11 @@
             <version>1.2.36</version>
         </dependency>
         <!-- redisson   -->
-        <!--<dependency>-->
-            <!--<groupId>org.redisson</groupId>-->
-            <!--<artifactId>redisson-spring-boot-starter</artifactId>-->
-            <!--<version>3.11.0</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.11.0</version>
+        </dependency>
 
         <!-- apache模板引擎 -->
         <dependency>

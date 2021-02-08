@@ -1,11 +1,9 @@
 package com.rrk.test;
 
 import cn.hutool.core.util.StrUtil;
-import com.rrk.entity.Consumer;
-import com.rrk.entity.Producer;
-import com.rrk.entity.Store;
-import com.rrk.entity.TbOrder;
+import com.rrk.entity.*;
 import com.rrk.factory.OrderFactory;
+import com.rrk.service.AopService;
 import com.rrk.utils.HttpUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -202,6 +202,30 @@ public class JdTest {
         } else {
             orderFactory.orderHandle1(order);
         }
+    }
+
+    @Autowired
+    private AopService aopService;
+    @Test
+    public void test09(){
+    int a =  aopService.add(1,2);
+        System.out.println("执行结果："+a);
+    }
+
+
+    @Test
+    public void test10(){
+        String type = "a";
+      List<Detail> list = aopService.getMainList(type);
+        System.out.println("获取的mains->:"+Arrays.asList(list));
+    }
+
+    @Test
+    public void test11(){
+        String orderNo = "202012344";
+        Long userId = 1234455L;
+        BigDecimal amount = null;
+        aopService.getParamCheck(orderNo,userId,amount);
     }
 
 }
