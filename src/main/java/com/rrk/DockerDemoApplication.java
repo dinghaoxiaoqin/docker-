@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 //开启配置文件动态刷新
 //@RefreshScope
 @EnableTransactionManagement
+//@EnableAspectJAutoProxy
 public class DockerDemoApplication {
 
     public static void main(String[] args) {
