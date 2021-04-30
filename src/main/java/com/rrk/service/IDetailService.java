@@ -14,4 +14,5 @@ import com.rrk.entity.Detail;
  */
 public interface IDetailService extends IService<Detail> {
 
+    void addDetail();
 }

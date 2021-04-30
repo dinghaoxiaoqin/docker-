@@ -5,24 +5,38 @@ spring:
   application:
     name: docker-demo
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    druid:
-      one:
+      db1:
         url: jdbc:mysql://localhost:3306/mytest?useUnicode=true&characterEncoding=UTF-8&useSSL=false&  serverTimezone=GMT%2B8
         driver-class-name: com.mysql.jdbc.Driver
+        type: com.alibaba.druid.pool.DruidDataSource
         username: root
         password: "123456"
         initialSize: 5
         minIdle: 5
         maxActive: 20
-      two:
+      db2:
         url: jdbc:mysql://localhost:3306/mytest2?useUnicode=true&characterEncoding=UTF-8&useSSL=false&  serverTimezone=GMT%2B8
         driver-class-name: com.mysql.jdbc.Driver
+        type: com.alibaba.druid.pool.DruidDataSource
         username: root
         password: "123456"
         initialSize: 5
         minIdle: 5
         maxActive: 20
+      druid:
+        filters: stat
+        maxActive: 20
+        initialSize: 1
+        maxWait: 60000
+        minIdle: 1
+        timeBetweenEvictionRunsMillis: 60000
+        minEvictableIdleTimeMillis: 300000
+        validationQuery: select 'x'
+        testWhileIdle: true
+        testOnBorrow: false
+        testOnReturn: false
+        poolPreparedStatements: true
+        maxOpenPreparedStatements: 20
   #  #rabbitmq的相关配置(生产者)
   rabbitmq:
     host: 127.0.0.1
@@ -97,3 +111,4 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: true
+    multipleResultSetsEnabled: true
